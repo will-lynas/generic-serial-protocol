@@ -10,12 +10,18 @@ mod messages {
     pub struct Num {
         pub num: u8,
     }
+
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct MyString {
+        pub string: String,
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
     Bytes(messages::Bytes),
     Num(messages::Num),
+    MyString(messages::MyString),
 }
 
 impl Message {
@@ -23,6 +29,7 @@ impl Message {
         match self {
             Message::Bytes(_) => 0,
             Message::Num(_) => 1,
+            Message::MyString(_) => 2,
         }
     }
 
@@ -33,6 +40,7 @@ impl Message {
         match self {
             Message::Bytes(msg) => bytes.extend(msg.data),
             Message::Num(msg) => bytes.push(msg.num),
+            Message::MyString(msg) => bytes.extend(msg.string.as_bytes()),
         }
 
         bytes
@@ -42,6 +50,9 @@ impl Message {
         match message_type {
             0 => Message::Bytes(messages::Bytes { data }),
             1 => Message::Num(messages::Num { num: data[0] }),
+            2 => Message::MyString(messages::MyString {
+                string: String::from_utf8(data).unwrap(),
+            }),
             _ => panic!("Invalid message type: {}", message_type),
         }
     }
@@ -95,6 +106,9 @@ mod tests {
                 data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
             }),
             Message::Num(messages::Num { num: 0x57 }),
+            Message::MyString(messages::MyString {
+                string: "Hello, world!".to_string(),
+            }),
         ];
 
         for message in test_messages {
