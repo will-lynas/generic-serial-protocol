@@ -178,6 +178,15 @@ mod tests {
                     1, 2, 3, 4, 5, // The bytes
                 ],
             ),
+            (
+                Message::U16(messages::U16 { num: 0x1234 }),
+                vec![
+                    0xFF, // Start byte
+                    0x04, 0x00, // Length (2 bytes for message type + 2 bytes data)
+                    0x05, 0x00, // Message type (5)
+                    0x34, 0x12, // The u16 value in little-endian
+                ],
+            ),
         ]
     }
 
