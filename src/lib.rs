@@ -146,7 +146,32 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::os::unix::net::UnixStream;
+    use std::{os::unix::net::UnixStream, time::Duration};
+
+    #[test]
+    fn test_noop_raw_bytes() {
+        let (stream1, mut stream2) = UnixStream::pair().unwrap();
+        let mut sender = SerialManager::new(stream1);
+
+        let expected_bytes = [
+            0xFF, // Start byte
+            0x02, 0x00, // Length (0x02)
+            0x04, 0x00, // Message type (0x04)
+        ];
+
+        sender.send(Message::NoOp(messages::NoOp {})).unwrap();
+
+        let mut received_bytes = vec![0u8; expected_bytes.len()];
+        stream2.read_exact(&mut received_bytes).unwrap();
+        assert_eq!(received_bytes, expected_bytes);
+
+        // Try to read one more byte to verify nothing else was sent
+        stream2
+            .set_read_timeout(Some(Duration::from_millis(10)))
+            .unwrap();
+        let mut extra_byte = [0u8; 1];
+        assert!(stream2.read_exact(&mut extra_byte).is_err());
+    }
 
     #[test]
     fn test_send_receive() {
