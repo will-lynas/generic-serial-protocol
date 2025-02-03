@@ -48,8 +48,6 @@ impl Message {
 
     fn to_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        let message_type_bytes = self.message_type().to_le_bytes();
-        bytes.extend_from_slice(&message_type_bytes);
 
         match self {
             Message::Bytes(msg) => bytes.extend(msg.data),
@@ -100,11 +98,13 @@ where
     }
 
     pub fn send(&mut self, message: Message) -> io::Result<()> {
+        let message_type_bytes = message.message_type().to_le_bytes();
         let data = message.to_bytes();
-        let length = (data.len() as u16).to_le_bytes();
+        let length = (message_type_bytes.len() + data.len()) as u16;
 
         self.connection.write_all(&[Self::START_BYTE])?;
-        self.connection.write_all(&length)?;
+        self.connection.write_all(&length.to_le_bytes())?;
+        self.connection.write_all(&message_type_bytes)?;
         self.connection.write_all(&data)?;
         self.connection.flush()?;
         Ok(())
