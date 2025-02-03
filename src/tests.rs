@@ -42,7 +42,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
         ),
         (
             Message::Multi(message_types::Multi {
-                num: 0x42,
+                num: 0x41,
                 string: "test".to_string(),
             }),
             vec![
@@ -50,9 +50,82 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
                 0x07,
                 0x00, // Length (2 bytes for message type + 1 byte for num + 4 bytes for string)
                 0x03, 0x00, // Message type (3)
-                0x42, // The u8 value
+                0x41, // The u8 value
                 b't', b'e', b's', b't', // The string bytes
             ],
+        ),
+        // Test case with START_BYTE in data
+        (
+            Message::Bytes(message_types::Bytes {
+                data: vec![SerialManager::<UnixStream>::START_BYTE],
+            }),
+            vec![
+                0x58, // Start byte
+                0x03,
+                0x00, // Length (2 bytes for message type + 1 byte data)
+                0x00,
+                0x00, // Message type (0)
+                SerialManager::<UnixStream>::ESCAPE_BYTE,
+                SerialManager::<UnixStream>::START_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE, // Escaped START_BYTE
+            ],
+        ),
+        // Test case with ESCAPE_BYTE in data
+        (
+            Message::Bytes(message_types::Bytes {
+                data: vec![SerialManager::<UnixStream>::ESCAPE_BYTE],
+            }),
+            vec![
+                0x58, // Start byte
+                0x03,
+                0x00, // Length (2 bytes for message type + 1 byte data)
+                0x00,
+                0x00, // Message type (0)
+                SerialManager::<UnixStream>::ESCAPE_BYTE,
+                SerialManager::<UnixStream>::ESCAPE_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE, // Escaped ESCAPE_BYTE
+            ],
+        ),
+        // Test case with multiple bytes needing escaping
+        (
+            Message::Bytes(message_types::Bytes {
+                data: vec![
+                    SerialManager::<UnixStream>::START_BYTE,
+                    SerialManager::<UnixStream>::ESCAPE_BYTE,
+                    SerialManager::<UnixStream>::START_BYTE,
+                ],
+            }),
+            vec![
+                0x58, // Start byte
+                0x05,
+                0x00, // Length (2 bytes for message type + 3 bytes data)
+                0x00,
+                0x00, // Message type (0)
+                // Each byte that needs escaping is preceded by ESCAPE_BYTE and XORed with XOR_BYTE
+                SerialManager::<UnixStream>::ESCAPE_BYTE,
+                SerialManager::<UnixStream>::START_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE,
+                SerialManager::<UnixStream>::ESCAPE_BYTE,
+                SerialManager::<UnixStream>::ESCAPE_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE,
+                SerialManager::<UnixStream>::ESCAPE_BYTE,
+                SerialManager::<UnixStream>::START_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE,
+            ],
+        ),
+        // Test case with ESCAPE_BYTE in length field (length = 0x0042)
+        (
+            Message::Bytes(message_types::Bytes {
+                data: vec![0; 0x40], // 64 bytes of data + 2 bytes message type = 0x42 (ESCAPE_BYTE)
+            }),
+            {
+                let mut bytes = vec![
+                    0x58,                                     // Start byte
+                    SerialManager::<UnixStream>::ESCAPE_BYTE, // Escape the 0x42 in length
+                    SerialManager::<UnixStream>::ESCAPE_BYTE
+                        ^ SerialManager::<UnixStream>::XOR_BYTE,
+                    0x00,
+                    0x00,
+                    0x00, // Message type (0)
+                ];
+                bytes.extend(vec![0; 0x40]); // Add 64 zeros
+                bytes
+            },
         ),
     ]
 }
