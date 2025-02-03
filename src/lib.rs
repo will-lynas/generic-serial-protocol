@@ -103,4 +103,20 @@ mod tests {
         let received = receiver.receive().unwrap();
         assert_eq!(expected, received);
     }
+
+    #[test]
+    fn test_serial_communication_test2() {
+        let (stream1, stream2) = UnixStream::pair().unwrap();
+
+        let mut sender = SerialManager::new(stream1);
+        let mut receiver = SerialManager::new(stream2);
+
+        let test_message = Message::Test2(messages::Test2 {
+            data: vec![0x57, 0x6F, 0x72, 0x6C, 0x64], // "World" in hex
+        });
+        let expected = test_message.clone();
+        sender.send(test_message).unwrap();
+        let received = receiver.receive().unwrap();
+        assert_eq!(expected, received);
+    }
 }
