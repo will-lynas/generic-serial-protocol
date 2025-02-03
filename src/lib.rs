@@ -7,22 +7,22 @@ mod messages {
     }
 
     #[derive(Debug, PartialEq, Clone)]
-    pub struct Test2 {
-        pub data: Vec<u8>,
+    pub struct Num {
+        pub num: u8,
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
     Bytes(messages::Bytes),
-    Test2(messages::Test2),
+    Num(messages::Num),
 }
 
 impl Message {
     fn message_type(&self) -> u8 {
         match self {
             Message::Bytes(_) => 0,
-            Message::Test2(_) => 1,
+            Message::Num(_) => 1,
         }
     }
 
@@ -32,7 +32,7 @@ impl Message {
 
         match self {
             Message::Bytes(msg) => bytes.extend(msg.data),
-            Message::Test2(msg) => bytes.extend(msg.data),
+            Message::Num(msg) => bytes.push(msg.num),
         }
 
         bytes
@@ -41,7 +41,7 @@ impl Message {
     fn from_bytes(message_type: u8, data: Vec<u8>) -> Self {
         match message_type {
             0 => Message::Bytes(messages::Bytes { data }),
-            1 => Message::Test2(messages::Test2 { data }),
+            1 => Message::Num(messages::Num { num: data[0] }),
             _ => panic!("Invalid message type: {}", message_type),
         }
     }
@@ -94,9 +94,7 @@ mod tests {
             Message::Bytes(messages::Bytes {
                 data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
             }),
-            Message::Test2(messages::Test2 {
-                data: vec![0x57, 0x6F, 0x72, 0x6C, 0x64],
-            }),
+            Message::Num(messages::Num { num: 0x57 }),
         ];
 
         for message in test_messages {
