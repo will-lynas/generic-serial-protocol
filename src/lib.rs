@@ -266,4 +266,25 @@ mod tests {
             assert_eq!(message, received);
         }
     }
+
+    #[test]
+    fn test_receive_with_garbage_prefix() {
+        let (mut stream1, stream2) = UnixStream::pair().unwrap();
+        let mut receiver = SerialManager::new(stream2);
+
+        // Some random bytes that aren't the start byte
+        let garbage = vec![0x00, 0xFF, 0x42, 0x13];
+
+        // Take a simple message from our test cases
+        let (expected_message, message_bytes) = get_test_cases()[0].clone();
+
+        // Send garbage followed by actual message
+        stream1.write_all(&garbage).unwrap();
+        stream1.write_all(&message_bytes).unwrap();
+        stream1.flush().unwrap();
+
+        // Should still receive correct message
+        let received_message = receiver.receive().unwrap();
+        assert_eq!(received_message, expected_message);
+    }
 }
