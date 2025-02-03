@@ -1,5 +1,27 @@
 use std::io::{self, Read, Write};
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct TestMessage {
+    data: Vec<u8>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Message {
+    Test(TestMessage),
+}
+
+impl Message {
+    fn to_bytes(self) -> Vec<u8> {
+        match self {
+            Message::Test(test_msg) => test_msg.data,
+        }
+    }
+
+    fn from_bytes(bytes: Vec<u8>) -> Self {
+        Message::Test(TestMessage { data: bytes })
+    }
+}
+
 pub struct SerialManager<T>
 where
     T: Read + Write,
@@ -15,17 +37,18 @@ where
         Self { connection }
     }
 
-    pub fn send(&mut self, data: &[u8]) -> io::Result<()> {
-        self.connection.write_all(data)?;
+    pub fn send(&mut self, message: Message) -> io::Result<()> {
+        let data = message.to_bytes();
+        self.connection.write_all(&data)?;
         self.connection.flush()?;
         Ok(())
     }
 
-    pub fn receive(&mut self) -> io::Result<Vec<u8>> {
+    pub fn receive(&mut self) -> io::Result<Message> {
         let mut buffer = vec![0; 1024];
         let n = self.connection.read(&mut buffer)?;
         buffer.truncate(n);
-        Ok(buffer)
+        Ok(Message::from_bytes(buffer))
     }
 }
 
@@ -41,9 +64,12 @@ mod tests {
         let mut sender = SerialManager::new(stream1);
         let mut receiver = SerialManager::new(stream2);
 
-        let data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F];
-        sender.send(&data).unwrap();
+        let test_message = Message::Test(TestMessage {
+            data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
+        });
+        let expected = test_message.clone();
+        sender.send(test_message).unwrap();
         let received = receiver.receive().unwrap();
-        assert_eq!(data, received);
+        assert_eq!(expected, received);
     }
 }
