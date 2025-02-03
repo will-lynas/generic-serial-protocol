@@ -89,34 +89,24 @@ mod tests {
     use std::os::unix::net::UnixStream;
 
     #[test]
-    fn test_serial_communication() {
+    fn test_send_receive() {
         let (stream1, stream2) = UnixStream::pair().unwrap();
-
         let mut sender = SerialManager::new(stream1);
         let mut receiver = SerialManager::new(stream2);
 
-        let test_message = Message::Test(messages::Test {
-            data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
-        });
-        let expected = test_message.clone();
-        sender.send(test_message).unwrap();
-        let received = receiver.receive().unwrap();
-        assert_eq!(expected, received);
-    }
+        let test_messages = vec![
+            Message::Test(messages::Test {
+                data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
+            }),
+            Message::Test2(messages::Test2 {
+                data: vec![0x57, 0x6F, 0x72, 0x6C, 0x64],
+            }),
+        ];
 
-    #[test]
-    fn test_serial_communication_test2() {
-        let (stream1, stream2) = UnixStream::pair().unwrap();
-
-        let mut sender = SerialManager::new(stream1);
-        let mut receiver = SerialManager::new(stream2);
-
-        let test_message = Message::Test2(messages::Test2 {
-            data: vec![0x57, 0x6F, 0x72, 0x6C, 0x64], // "World" in hex
-        });
-        let expected = test_message.clone();
-        sender.send(test_message).unwrap();
-        let received = receiver.receive().unwrap();
-        assert_eq!(expected, received);
+        for message in test_messages {
+            sender.send(message.clone()).unwrap();
+            let received = receiver.receive().unwrap();
+            assert_eq!(message, received);
+        }
     }
 }
