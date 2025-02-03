@@ -12,6 +12,11 @@ mod messages {
     }
 
     #[derive(Debug, PartialEq, Clone)]
+    pub struct U16 {
+        pub num: u16,
+    }
+
+    #[derive(Debug, PartialEq, Clone)]
     pub struct MyString {
         pub string: String,
     }
@@ -33,6 +38,7 @@ pub enum Message {
     MyString(messages::MyString),
     Multi(messages::Multi),
     NoOp(messages::NoOp),
+    U16(messages::U16),
 }
 
 impl Message {
@@ -43,6 +49,7 @@ impl Message {
             Message::MyString(_) => 2,
             Message::Multi(_) => 3,
             Message::NoOp(_) => 4,
+            Message::U16(_) => 5,
         }
     }
 
@@ -58,6 +65,7 @@ impl Message {
                 bytes.extend(msg.string.as_bytes());
             }
             Message::NoOp(_) => {}
+            Message::U16(msg) => bytes.extend(msg.num.to_le_bytes()),
         }
 
         bytes
@@ -75,6 +83,9 @@ impl Message {
                 string: String::from_utf8(data[1..].to_vec()).unwrap(),
             }),
             4 => Message::NoOp(messages::NoOp {}),
+            5 => Message::U16(messages::U16 {
+                num: u16::from_le_bytes([data[0], data[1]]),
+            }),
             _ => panic!("Invalid message type: {}", message_type),
         }
     }
@@ -156,6 +167,7 @@ mod tests {
                 string: "Hello, world!".to_string(),
             }),
             Message::NoOp(messages::NoOp {}),
+            Message::U16(messages::U16 { num: 0x57 }),
         ];
 
         for message in test_messages {
