@@ -13,7 +13,7 @@ pub enum Message {
 impl Message {
     fn to_bytes(self) -> Vec<u8> {
         match self {
-            Message::Test(test_msg) => test_msg.data,
+            Message::Test(msg) => msg.data,
         }
     }
 
