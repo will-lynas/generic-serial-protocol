@@ -1,13 +1,15 @@
 use std::io::{self, Read, Write};
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Test {
-    data: Vec<u8>,
+mod messages {
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct Test {
+        pub data: Vec<u8>,
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
-    Test(Test),
+    Test(messages::Test),
 }
 
 impl Message {
@@ -18,7 +20,7 @@ impl Message {
     }
 
     fn from_bytes(bytes: Vec<u8>) -> Self {
-        Message::Test(Test { data: bytes })
+        Message::Test(messages::Test { data: bytes })
     }
 }
 
@@ -64,7 +66,7 @@ mod tests {
         let mut sender = SerialManager::new(stream1);
         let mut receiver = SerialManager::new(stream2);
 
-        let test_message = Message::Test(Test {
+        let test_message = Message::Test(messages::Test {
             data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
         });
         let expected = test_message.clone();
