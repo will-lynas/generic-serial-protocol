@@ -1,13 +1,13 @@
-use crate::messages;
+use crate::message_types;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
-    Bytes(messages::Bytes),
-    U8(messages::U8),
-    MyString(messages::MyString),
-    Multi(messages::Multi),
-    NoOp(messages::NoOp),
-    U16(messages::U16),
+    Bytes(message_types::Bytes),
+    U8(message_types::U8),
+    MyString(message_types::MyString),
+    Multi(message_types::Multi),
+    NoOp(message_types::NoOp),
+    U16(message_types::U16),
 }
 
 impl Message {
@@ -42,17 +42,17 @@ impl Message {
 
     pub fn from_bytes(message_type: u16, data: Vec<u8>) -> Self {
         match message_type {
-            0 => Message::Bytes(messages::Bytes { data }),
-            1 => Message::U8(messages::U8 { num: data[0] }),
-            2 => Message::MyString(messages::MyString {
+            0 => Message::Bytes(message_types::Bytes { data }),
+            1 => Message::U8(message_types::U8 { num: data[0] }),
+            2 => Message::MyString(message_types::MyString {
                 string: String::from_utf8(data).unwrap(),
             }),
-            3 => Message::Multi(messages::Multi {
+            3 => Message::Multi(message_types::Multi {
                 num: data[0],
                 string: String::from_utf8(data[1..].to_vec()).unwrap(),
             }),
-            4 => Message::NoOp(messages::NoOp {}),
-            5 => Message::U16(messages::U16 {
+            4 => Message::NoOp(message_types::NoOp {}),
+            5 => Message::U16(message_types::U16 {
                 num: u16::from_le_bytes([data[0], data[1]]),
             }),
             _ => panic!("Invalid message type: {}", message_type),

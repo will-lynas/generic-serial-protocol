@@ -4,7 +4,7 @@ use std::{os::unix::net::UnixStream, time::Duration};
 fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
     vec![
         (
-            Message::NoOp(messages::NoOp {}),
+            Message::NoOp(message_types::NoOp {}),
             vec![
                 0x58, // Start byte
                 0x02, 0x00, // Length (2 bytes for message type)
@@ -12,7 +12,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
             ],
         ),
         (
-            Message::U8(messages::U8 { num: 0x57 }),
+            Message::U8(message_types::U8 { num: 0x57 }),
             vec![
                 0x58, // Start byte
                 0x03, 0x00, // Length (2 bytes for message type + 1 byte data)
@@ -21,7 +21,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
             ],
         ),
         (
-            Message::Bytes(messages::Bytes {
+            Message::Bytes(message_types::Bytes {
                 data: vec![1, 2, 3, 4, 5],
             }),
             vec![
@@ -32,7 +32,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
             ],
         ),
         (
-            Message::U16(messages::U16 { num: 0x1234 }),
+            Message::U16(message_types::U16 { num: 0x1234 }),
             vec![
                 0x58, // Start byte
                 0x04, 0x00, // Length (2 bytes for message type + 2 bytes data)
@@ -41,7 +41,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
             ],
         ),
         (
-            Message::Multi(messages::Multi {
+            Message::Multi(message_types::Multi {
                 num: 0x42,
                 string: "test".to_string(),
             }),
@@ -98,19 +98,19 @@ fn test_send_receive() {
     let mut receiver = SerialManager::new(stream2);
 
     let test_messages = vec![
-        Message::Bytes(messages::Bytes {
+        Message::Bytes(message_types::Bytes {
             data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
         }),
-        Message::U8(messages::U8 { num: 0x57 }),
-        Message::MyString(messages::MyString {
+        Message::U8(message_types::U8 { num: 0x57 }),
+        Message::MyString(message_types::MyString {
             string: "Hello, world!".to_string(),
         }),
-        Message::Multi(messages::Multi {
+        Message::Multi(message_types::Multi {
             num: 0x57,
             string: "Hello, world!".to_string(),
         }),
-        Message::NoOp(messages::NoOp {}),
-        Message::U16(messages::U16 { num: 0x57 }),
+        Message::NoOp(message_types::NoOp {}),
+        Message::U16(message_types::U16 { num: 0x57 }),
     ];
 
     for message in test_messages {

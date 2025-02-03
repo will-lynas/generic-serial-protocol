@@ -1,7 +1,7 @@
 use std::io::{self, Read, Write};
 
 mod message;
-mod messages;
+mod message_types;
 
 pub use message::Message;
 
