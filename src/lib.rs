@@ -29,10 +29,6 @@ where
     }
 }
 
-fn main() {
-    // Main function left empty for now
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
