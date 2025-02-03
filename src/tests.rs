@@ -255,15 +255,18 @@ fn test_receive_interrupted_message() {
     let (mut stream1, stream2) = UnixStream::pair().unwrap();
     let mut receiver = SerialManager::new(stream2);
 
-    // Take a message from our test cases that will be interrupted
-    let (_, message_bytes1) = get_test_cases()[1].clone(); // U8 message
+    // Take a Bytes message from our test cases that will be interrupted
+    let (_, message_bytes1) = get_test_cases()[2].clone(); // Bytes message
 
     // Take another message that will be received successfully
     let (expected_message2, message_bytes2) = get_test_cases()[0].clone(); // NoOp message
 
-    // Send first half of first message
-    let half_length = message_bytes1.len() / 2;
-    stream1.write_all(&message_bytes1[..half_length]).unwrap();
+    // Send the start byte, length, message type, and first few bytes of data
+    let data_start = 4; // Skip past start byte, length bytes, and message type bytes
+    let partial_length = data_start + 2; // Send a couple bytes of the actual data
+    stream1
+        .write_all(&message_bytes1[..partial_length])
+        .unwrap();
 
     // Send the complete second message
     stream1.write_all(&message_bytes2).unwrap();
