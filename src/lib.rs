@@ -21,6 +21,9 @@ mod messages {
         pub num: u8,
         pub string: String,
     }
+
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct NoOp {}
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -29,6 +32,7 @@ pub enum Message {
     Num(messages::Num),
     MyString(messages::MyString),
     Multi(messages::Multi),
+    NoOp(messages::NoOp),
 }
 
 impl Message {
@@ -38,6 +42,7 @@ impl Message {
             Message::Num(_) => 1,
             Message::MyString(_) => 2,
             Message::Multi(_) => 3,
+            Message::NoOp(_) => 4,
         }
     }
 
@@ -53,6 +58,7 @@ impl Message {
                 bytes.push(msg.num);
                 bytes.extend(msg.string.as_bytes());
             }
+            Message::NoOp(_) => {}
         }
 
         bytes
@@ -69,6 +75,7 @@ impl Message {
                 num: data[0],
                 string: String::from_utf8(data[1..].to_vec()).unwrap(),
             }),
+            4 => Message::NoOp(messages::NoOp {}),
             _ => panic!("Invalid message type: {}", message_type),
         }
     }
@@ -129,6 +136,7 @@ mod tests {
                 num: 0x57,
                 string: "Hello, world!".to_string(),
             }),
+            Message::NoOp(messages::NoOp {}),
         ];
 
         for message in test_messages {
