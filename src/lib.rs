@@ -15,6 +15,12 @@ mod messages {
     pub struct MyString {
         pub string: String,
     }
+
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct Multi {
+        pub num: u8,
+        pub string: String,
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -22,6 +28,7 @@ pub enum Message {
     Bytes(messages::Bytes),
     Num(messages::Num),
     MyString(messages::MyString),
+    Multi(messages::Multi),
 }
 
 impl Message {
@@ -30,6 +37,7 @@ impl Message {
             Message::Bytes(_) => 0,
             Message::Num(_) => 1,
             Message::MyString(_) => 2,
+            Message::Multi(_) => 3,
         }
     }
 
@@ -41,6 +49,10 @@ impl Message {
             Message::Bytes(msg) => bytes.extend(msg.data),
             Message::Num(msg) => bytes.push(msg.num),
             Message::MyString(msg) => bytes.extend(msg.string.as_bytes()),
+            Message::Multi(msg) => {
+                bytes.push(msg.num);
+                bytes.extend(msg.string.as_bytes());
+            }
         }
 
         bytes
@@ -52,6 +64,10 @@ impl Message {
             1 => Message::Num(messages::Num { num: data[0] }),
             2 => Message::MyString(messages::MyString {
                 string: String::from_utf8(data).unwrap(),
+            }),
+            3 => Message::Multi(messages::Multi {
+                num: data[0],
+                string: String::from_utf8(data[1..].to_vec()).unwrap(),
             }),
             _ => panic!("Invalid message type: {}", message_type),
         }
@@ -107,6 +123,10 @@ mod tests {
             }),
             Message::Num(messages::Num { num: 0x57 }),
             Message::MyString(messages::MyString {
+                string: "Hello, world!".to_string(),
+            }),
+            Message::Multi(messages::Multi {
+                num: 0x57,
                 string: "Hello, world!".to_string(),
             }),
         ];
