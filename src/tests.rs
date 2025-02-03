@@ -276,3 +276,68 @@ fn test_receive_interrupted_message() {
     let received_message = receiver.receive().unwrap();
     assert_eq!(received_message, expected_message2);
 }
+
+#[test]
+fn test_receive_interrupted_at_start() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    // Take a message that will be received successfully
+    let (expected_message, message_bytes) = get_test_cases()[0].clone(); // NoOp message
+
+    // Send just a start byte
+    stream1.write_all(&[START_BYTE]).unwrap();
+
+    // Send the complete message
+    stream1.write_all(&message_bytes).unwrap();
+    stream1.flush().unwrap();
+
+    // Should receive the complete message correctly, ignoring the stray start byte
+    let received_message = receiver.receive().unwrap();
+    assert_eq!(received_message, expected_message);
+}
+
+#[test]
+fn test_receive_interrupted_length() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    // Take a message that will be received successfully
+    let (expected_message, message_bytes) = get_test_cases()[0].clone(); // NoOp message
+
+    // Send start byte and first byte of length
+    stream1.write_all(&[START_BYTE, 0x42]).unwrap(); // Random first byte of length
+
+    // Send the complete message
+    stream1.write_all(&message_bytes).unwrap();
+    stream1.flush().unwrap();
+
+    // Should receive the complete message correctly, ignoring the interrupted message
+    let received_message = receiver.receive().unwrap();
+    assert_eq!(received_message, expected_message);
+}
+
+#[test]
+fn test_receive_interrupted_message_type() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    // Take a message that will be received successfully
+    let (expected_message, message_bytes) = get_test_cases()[0].clone(); // NoOp message
+
+    // Send start byte, length bytes, and first byte of message type
+    stream1
+        .write_all(&[
+            START_BYTE, 0x02, 0x00, // Length bytes
+            0xFF, // First byte of message type
+        ])
+        .unwrap();
+
+    // Send the complete message
+    stream1.write_all(&message_bytes).unwrap();
+    stream1.flush().unwrap();
+
+    // Should receive the complete message correctly, ignoring the interrupted message
+    let received_message = receiver.receive().unwrap();
+    assert_eq!(received_message, expected_message);
+}
