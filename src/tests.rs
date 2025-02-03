@@ -165,21 +165,8 @@ fn test_send_receive() {
     let mut sender = SerialManager::new(stream1);
     let mut receiver = SerialManager::new(stream2);
 
-    let test_messages = vec![
-        Message::Bytes(message_types::Bytes {
-            data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
-        }),
-        Message::U8(message_types::U8 { num: 0x57 }),
-        Message::MyString(message_types::MyString {
-            string: "Hello, world!".to_string(),
-        }),
-        Message::Multi(message_types::Multi {
-            num: 0x57,
-            string: "Hello, world!".to_string(),
-        }),
-        Message::NoOp(message_types::NoOp {}),
-        Message::U16(message_types::U16 { num: 0x57 }),
-    ];
+    // Get just the messages from test cases, discarding the raw bytes
+    let test_messages: Vec<Message> = get_test_cases().into_iter().map(|(msg, _)| msg).collect();
 
     for message in test_messages {
         sender.send(message.clone()).unwrap();
