@@ -92,21 +92,39 @@ impl<T> SerialManager<T>
 where
     T: Read + Write,
 {
+    const START_BYTE: u8 = 0xFF;
+
     pub fn new(connection: T) -> Self {
         Self { connection }
     }
 
     pub fn send(&mut self, message: Message) -> io::Result<()> {
         let data = message.to_bytes();
+        let length = (data.len() as u16).to_be_bytes();
+
+        self.connection.write_all(&[Self::START_BYTE])?;
+        self.connection.write_all(&length)?;
         self.connection.write_all(&data)?;
         self.connection.flush()?;
         Ok(())
     }
 
     pub fn receive(&mut self) -> io::Result<Message> {
-        let mut buffer = vec![0; 1024];
-        let n = self.connection.read(&mut buffer)?;
-        buffer.truncate(n);
+        loop {
+            let mut byte = [0u8; 1];
+            self.connection.read_exact(&mut byte)?;
+            if byte[0] == Self::START_BYTE {
+                break;
+            }
+        }
+
+        let mut length_bytes = [0u8; 2];
+        self.connection.read_exact(&mut length_bytes)?;
+        let length = u16::from_be_bytes(length_bytes) as usize;
+
+        let mut buffer = vec![0u8; length];
+        self.connection.read_exact(&mut buffer)?;
+
         let message_type = buffer[0];
         let data = buffer[1..].to_vec();
         Ok(Message::from_bytes(message_type, data))
