@@ -187,6 +187,20 @@ mod tests {
                     0x34, 0x12, // The u16 value in little-endian
                 ],
             ),
+            (
+                Message::Multi(messages::Multi {
+                    num: 0x42,
+                    string: "test".to_string(),
+                }),
+                vec![
+                    0xFF, // Start byte
+                    0x07,
+                    0x00, // Length (2 bytes for message type + 1 byte for num + 4 bytes for string)
+                    0x03, 0x00, // Message type (3)
+                    0x42, // The u8 value
+                    b't', b'e', b's', b't', // The string bytes
+                ],
+            ),
         ]
     }
 
