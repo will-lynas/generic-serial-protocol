@@ -102,7 +102,7 @@ impl<T> SerialManager<T>
 where
     T: Read + Write,
 {
-    const START_BYTE: u8 = 0xFF;
+    const START_BYTE: u8 = 0x58;
 
     pub fn new(connection: T) -> Self {
         Self { connection }
@@ -153,7 +153,7 @@ mod tests {
             (
                 Message::NoOp(messages::NoOp {}),
                 vec![
-                    0xFF, // Start byte
+                    0x58, // Start byte
                     0x02, 0x00, // Length (2 bytes for message type)
                     0x04, 0x00, // Message type (4)
                 ],
@@ -161,7 +161,7 @@ mod tests {
             (
                 Message::U8(messages::U8 { num: 0x57 }),
                 vec![
-                    0xFF, // Start byte
+                    0x58, // Start byte
                     0x03, 0x00, // Length (2 bytes for message type + 1 byte data)
                     0x01, 0x00, // Message type (1)
                     0x57, // The u8 value
@@ -172,7 +172,7 @@ mod tests {
                     data: vec![1, 2, 3, 4, 5],
                 }),
                 vec![
-                    0xFF, // Start byte
+                    0x58, // Start byte
                     0x07, 0x00, // Length (2 bytes for message type + 5 bytes data)
                     0x00, 0x00, // Message type (0)
                     1, 2, 3, 4, 5, // The bytes
@@ -181,7 +181,7 @@ mod tests {
             (
                 Message::U16(messages::U16 { num: 0x1234 }),
                 vec![
-                    0xFF, // Start byte
+                    0x58, // Start byte
                     0x04, 0x00, // Length (2 bytes for message type + 2 bytes data)
                     0x05, 0x00, // Message type (5)
                     0x34, 0x12, // The u16 value in little-endian
@@ -193,7 +193,7 @@ mod tests {
                     string: "test".to_string(),
                 }),
                 vec![
-                    0xFF, // Start byte
+                    0x58, // Start byte
                     0x07,
                     0x00, // Length (2 bytes for message type + 1 byte for num + 4 bytes for string)
                     0x03, 0x00, // Message type (3)
