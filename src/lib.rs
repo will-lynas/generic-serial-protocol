@@ -287,4 +287,29 @@ mod tests {
         let received_message = receiver.receive().unwrap();
         assert_eq!(received_message, expected_message);
     }
+
+    #[test]
+    fn test_receive_multiple_packets() {
+        let (mut stream1, stream2) = UnixStream::pair().unwrap();
+        let mut receiver = SerialManager::new(stream2);
+
+        // Take two different messages from our test cases
+        let (expected_message1, message_bytes1) = get_test_cases()[0].clone(); // NoOp
+        let (expected_message2, message_bytes2) = get_test_cases()[1].clone(); // U8
+
+        // Send both messages in a single write
+        let mut combined_bytes = Vec::new();
+        combined_bytes.extend(&message_bytes1);
+        combined_bytes.extend(&message_bytes2);
+        stream1.write_all(&combined_bytes).unwrap();
+        stream1.flush().unwrap();
+
+        // Should receive first message
+        let received_message1 = receiver.receive().unwrap();
+        assert_eq!(received_message1, expected_message1);
+
+        // Should receive second message
+        let received_message2 = receiver.receive().unwrap();
+        assert_eq!(received_message2, expected_message2);
+    }
 }
