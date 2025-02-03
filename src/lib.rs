@@ -5,6 +5,10 @@ mod message_types;
 
 pub use message::Message;
 
+const START_BYTE: u8 = 0x58;
+const ESCAPE_BYTE: u8 = 0x42;
+const XOR_BYTE: u8 = 0x69;
+
 pub struct SerialManager<T>
 where
     T: Read + Write,
@@ -16,22 +20,18 @@ impl<T> SerialManager<T>
 where
     T: Read + Write,
 {
-    const START_BYTE: u8 = 0x58;
-    const ESCAPE_BYTE: u8 = 0x42;
-    const XOR_BYTE: u8 = 0x69;
-
     pub fn new(connection: T) -> Self {
         Self { connection }
     }
 
     fn needs_escaping(byte: u8) -> bool {
-        byte == Self::START_BYTE || byte == Self::ESCAPE_BYTE
+        byte == START_BYTE || byte == ESCAPE_BYTE
     }
 
     fn write_escaped_byte(&mut self, byte: u8) -> io::Result<()> {
         if Self::needs_escaping(byte) {
-            self.connection.write_all(&[Self::ESCAPE_BYTE])?;
-            self.connection.write_all(&[byte ^ Self::XOR_BYTE])?;
+            self.connection.write_all(&[ESCAPE_BYTE])?;
+            self.connection.write_all(&[byte ^ XOR_BYTE])?;
         } else {
             self.connection.write_all(&[byte])?;
         }
@@ -42,10 +42,10 @@ where
         let mut byte = [0u8; 1];
         self.connection.read_exact(&mut byte)?;
 
-        if byte[0] == Self::ESCAPE_BYTE {
+        if byte[0] == ESCAPE_BYTE {
             let mut next_byte = [0u8; 1];
             self.connection.read_exact(&mut next_byte)?;
-            Ok(next_byte[0] ^ Self::XOR_BYTE)
+            Ok(next_byte[0] ^ XOR_BYTE)
         } else {
             Ok(byte[0])
         }
@@ -72,7 +72,7 @@ where
         let length = (message_type_bytes.len() + data.len()) as u16;
         let length_bytes = length.to_le_bytes();
 
-        self.connection.write_all(&[Self::START_BYTE])?;
+        self.connection.write_all(&[START_BYTE])?;
         self.write_escaped_bytes(&length_bytes)?;
         self.write_escaped_bytes(&message_type_bytes)?;
         self.write_escaped_bytes(&data)?;
@@ -84,7 +84,7 @@ where
         loop {
             let mut byte = [0u8; 1];
             self.connection.read_exact(&mut byte)?;
-            if byte[0] == Self::START_BYTE {
+            if byte[0] == START_BYTE {
                 break;
             }
         }

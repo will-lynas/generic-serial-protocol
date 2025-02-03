@@ -6,7 +6,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
         (
             Message::NoOp(message_types::NoOp {}),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x02, 0x00, // Length (2 bytes for message type)
                 0x04, 0x00, // Message type (4)
             ],
@@ -14,7 +14,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
         (
             Message::U8(message_types::U8 { num: 0x57 }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x03, 0x00, // Length (2 bytes for message type + 1 byte data)
                 0x01, 0x00, // Message type (1)
                 0x57, // The u8 value
@@ -25,7 +25,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
                 data: vec![1, 2, 3, 4, 5],
             }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x07, 0x00, // Length (2 bytes for message type + 5 bytes data)
                 0x00, 0x00, // Message type (0)
                 1, 2, 3, 4, 5, // The bytes
@@ -34,7 +34,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
         (
             Message::U16(message_types::U16 { num: 0x1234 }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x04, 0x00, // Length (2 bytes for message type + 2 bytes data)
                 0x05, 0x00, // Message type (5)
                 0x34, 0x12, // The u16 value in little-endian
@@ -46,7 +46,7 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
                 string: "test".to_string(),
             }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x07,
                 0x00, // Length (2 bytes for message type + 1 byte for num + 4 bytes for string)
                 0x03, 0x00, // Message type (3)
@@ -57,55 +57,51 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
         // Test case with START_BYTE in data
         (
             Message::Bytes(message_types::Bytes {
-                data: vec![SerialManager::<UnixStream>::START_BYTE],
+                data: vec![START_BYTE],
             }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x03,
                 0x00, // Length (2 bytes for message type + 1 byte data)
                 0x00,
                 0x00, // Message type (0)
-                SerialManager::<UnixStream>::ESCAPE_BYTE,
-                SerialManager::<UnixStream>::START_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE, // Escaped START_BYTE
+                ESCAPE_BYTE,
+                START_BYTE ^ XOR_BYTE, // Escaped START_BYTE
             ],
         ),
         // Test case with ESCAPE_BYTE in data
         (
             Message::Bytes(message_types::Bytes {
-                data: vec![SerialManager::<UnixStream>::ESCAPE_BYTE],
+                data: vec![ESCAPE_BYTE],
             }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x03,
                 0x00, // Length (2 bytes for message type + 1 byte data)
                 0x00,
                 0x00, // Message type (0)
-                SerialManager::<UnixStream>::ESCAPE_BYTE,
-                SerialManager::<UnixStream>::ESCAPE_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE, // Escaped ESCAPE_BYTE
+                ESCAPE_BYTE,
+                ESCAPE_BYTE ^ XOR_BYTE, // Escaped ESCAPE_BYTE
             ],
         ),
         // Test case with multiple bytes needing escaping
         (
             Message::Bytes(message_types::Bytes {
-                data: vec![
-                    SerialManager::<UnixStream>::START_BYTE,
-                    SerialManager::<UnixStream>::ESCAPE_BYTE,
-                    SerialManager::<UnixStream>::START_BYTE,
-                ],
+                data: vec![START_BYTE, ESCAPE_BYTE, START_BYTE],
             }),
             vec![
-                0x58, // Start byte
+                START_BYTE, // Start byte
                 0x05,
                 0x00, // Length (2 bytes for message type + 3 bytes data)
                 0x00,
                 0x00, // Message type (0)
                 // Each byte that needs escaping is preceded by ESCAPE_BYTE and XORed with XOR_BYTE
-                SerialManager::<UnixStream>::ESCAPE_BYTE,
-                SerialManager::<UnixStream>::START_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE,
-                SerialManager::<UnixStream>::ESCAPE_BYTE,
-                SerialManager::<UnixStream>::ESCAPE_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE,
-                SerialManager::<UnixStream>::ESCAPE_BYTE,
-                SerialManager::<UnixStream>::START_BYTE ^ SerialManager::<UnixStream>::XOR_BYTE,
+                ESCAPE_BYTE,
+                START_BYTE ^ XOR_BYTE,
+                ESCAPE_BYTE,
+                ESCAPE_BYTE ^ XOR_BYTE,
+                ESCAPE_BYTE,
+                START_BYTE ^ XOR_BYTE,
             ],
         ),
         // Test case with ESCAPE_BYTE in length field (length = 0x0042)
@@ -115,10 +111,9 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
             }),
             {
                 let mut bytes = vec![
-                    0x58,                                     // Start byte
-                    SerialManager::<UnixStream>::ESCAPE_BYTE, // Escape the 0x42 in length
-                    SerialManager::<UnixStream>::ESCAPE_BYTE
-                        ^ SerialManager::<UnixStream>::XOR_BYTE,
+                    START_BYTE,  // Start byte
+                    ESCAPE_BYTE, // Escape the 0x42 in length
+                    ESCAPE_BYTE ^ XOR_BYTE,
                     0x00,
                     0x00,
                     0x00, // Message type (0)
