@@ -7,7 +7,7 @@ mod messages {
     }
 
     #[derive(Debug, PartialEq, Clone)]
-    pub struct Num {
+    pub struct U8 {
         pub num: u8,
     }
 
@@ -29,7 +29,7 @@ mod messages {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
     Bytes(messages::Bytes),
-    Num(messages::Num),
+    U8(messages::U8),
     MyString(messages::MyString),
     Multi(messages::Multi),
     NoOp(messages::NoOp),
@@ -39,7 +39,7 @@ impl Message {
     fn message_type(&self) -> u16 {
         match self {
             Message::Bytes(_) => 0,
-            Message::Num(_) => 1,
+            Message::U8(_) => 1,
             Message::MyString(_) => 2,
             Message::Multi(_) => 3,
             Message::NoOp(_) => 4,
@@ -51,7 +51,7 @@ impl Message {
 
         match self {
             Message::Bytes(msg) => bytes.extend(msg.data),
-            Message::Num(msg) => bytes.push(msg.num),
+            Message::U8(msg) => bytes.push(msg.num),
             Message::MyString(msg) => bytes.extend(msg.string.as_bytes()),
             Message::Multi(msg) => {
                 bytes.push(msg.num);
@@ -66,7 +66,7 @@ impl Message {
     fn from_bytes(message_type: u16, data: Vec<u8>) -> Self {
         match message_type {
             0 => Message::Bytes(messages::Bytes { data }),
-            1 => Message::Num(messages::Num { num: data[0] }),
+            1 => Message::U8(messages::U8 { num: data[0] }),
             2 => Message::MyString(messages::MyString {
                 string: String::from_utf8(data).unwrap(),
             }),
@@ -147,7 +147,7 @@ mod tests {
             Message::Bytes(messages::Bytes {
                 data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
             }),
-            Message::Num(messages::Num { num: 0x57 }),
+            Message::U8(messages::U8 { num: 0x57 }),
             Message::MyString(messages::MyString {
                 string: "Hello, world!".to_string(),
             }),
