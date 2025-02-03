@@ -2,7 +2,7 @@ use std::io::{self, Read, Write};
 
 mod messages {
     #[derive(Debug, PartialEq, Clone)]
-    pub struct Test {
+    pub struct Bytes {
         pub data: Vec<u8>,
     }
 
@@ -14,14 +14,14 @@ mod messages {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
-    Test(messages::Test),
+    Bytes(messages::Bytes),
     Test2(messages::Test2),
 }
 
 impl Message {
     fn message_type(&self) -> u8 {
         match self {
-            Message::Test(_) => 0,
+            Message::Bytes(_) => 0,
             Message::Test2(_) => 1,
         }
     }
@@ -31,7 +31,7 @@ impl Message {
         bytes.push(self.message_type());
 
         match self {
-            Message::Test(msg) => bytes.extend(msg.data),
+            Message::Bytes(msg) => bytes.extend(msg.data),
             Message::Test2(msg) => bytes.extend(msg.data),
         }
 
@@ -40,7 +40,7 @@ impl Message {
 
     fn from_bytes(message_type: u8, data: Vec<u8>) -> Self {
         match message_type {
-            0 => Message::Test(messages::Test { data }),
+            0 => Message::Bytes(messages::Bytes { data }),
             1 => Message::Test2(messages::Test2 { data }),
             _ => panic!("Invalid message type: {}", message_type),
         }
@@ -91,7 +91,7 @@ mod tests {
         let mut receiver = SerialManager::new(stream2);
 
         let test_messages = vec![
-            Message::Test(messages::Test {
+            Message::Bytes(messages::Bytes {
                 data: vec![0x48, 0x65, 0x6C, 0x6C, 0x6F],
             }),
             Message::Test2(messages::Test2 {
