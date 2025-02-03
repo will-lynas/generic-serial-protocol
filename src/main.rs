@@ -47,11 +47,7 @@ mod tests {
 
         let data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F];
         sender.send(&data).unwrap();
-        println!("Sent data: {:?}", data);
-
         let received = receiver.receive().unwrap();
-        println!("Received data: {:?}", received);
-
         assert_eq!(data, received);
     }
 }
