@@ -26,14 +26,6 @@ impl Message {
         }
     }
 
-    fn from_type(message_type: u8, data: Vec<u8>) -> Self {
-        match message_type {
-            0 => Message::Test(messages::Test { data }),
-            1 => Message::Test2(messages::Test2 { data }),
-            _ => panic!("Invalid message type: {}", message_type),
-        }
-    }
-
     fn to_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
         bytes.push(self.message_type());
@@ -46,10 +38,12 @@ impl Message {
         bytes
     }
 
-    fn from_bytes(bytes: Vec<u8>) -> Self {
-        let message_type = bytes[0];
-        let data = bytes[1..].to_vec();
-        Self::from_type(message_type, data)
+    fn from_bytes(message_type: u8, data: Vec<u8>) -> Self {
+        match message_type {
+            0 => Message::Test(messages::Test { data }),
+            1 => Message::Test2(messages::Test2 { data }),
+            _ => panic!("Invalid message type: {}", message_type),
+        }
     }
 }
 
@@ -79,7 +73,9 @@ where
         let mut buffer = vec![0; 1024];
         let n = self.connection.read(&mut buffer)?;
         buffer.truncate(n);
-        Ok(Message::from_bytes(buffer))
+        let message_type = buffer[0];
+        let data = buffer[1..].to_vec();
+        Ok(Message::from_bytes(message_type, data))
     }
 }
 
