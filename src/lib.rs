@@ -36,7 +36,7 @@ pub enum Message {
 }
 
 impl Message {
-    fn message_type(&self) -> u8 {
+    fn message_type(&self) -> u16 {
         match self {
             Message::Bytes(_) => 0,
             Message::Num(_) => 1,
@@ -48,7 +48,8 @@ impl Message {
 
     fn to_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.push(self.message_type());
+        let message_type_bytes = self.message_type().to_be_bytes();
+        bytes.extend_from_slice(&message_type_bytes);
 
         match self {
             Message::Bytes(msg) => bytes.extend(msg.data),
@@ -64,7 +65,7 @@ impl Message {
         bytes
     }
 
-    fn from_bytes(message_type: u8, data: Vec<u8>) -> Self {
+    fn from_bytes(message_type: u16, data: Vec<u8>) -> Self {
         match message_type {
             0 => Message::Bytes(messages::Bytes { data }),
             1 => Message::Num(messages::Num { num: data[0] }),
@@ -125,8 +126,8 @@ where
         let mut buffer = vec![0u8; length];
         self.connection.read_exact(&mut buffer)?;
 
-        let message_type = buffer[0];
-        let data = buffer[1..].to_vec();
+        let message_type = u16::from_be_bytes([buffer[0], buffer[1]]);
+        let data = buffer[2..].to_vec();
         Ok(Message::from_bytes(message_type, data))
     }
 }
