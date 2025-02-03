@@ -149,28 +149,54 @@ mod tests {
     use std::{os::unix::net::UnixStream, time::Duration};
 
     #[test]
-    fn test_noop_raw_bytes() {
-        let (stream1, mut stream2) = UnixStream::pair().unwrap();
-        let mut sender = SerialManager::new(stream1);
-
-        let expected_bytes = [
-            0xFF, // Start byte
-            0x02, 0x00, // Length (0x02)
-            0x04, 0x00, // Message type (0x04)
+    fn test_send_raw_bytes() {
+        let test_cases = vec![
+            (
+                Message::NoOp(messages::NoOp {}),
+                vec![
+                    0xFF, // Start byte
+                    0x02, 0x00, // Length (2 bytes for message type)
+                    0x04, 0x00, // Message type (4)
+                ],
+            ),
+            (
+                Message::U8(messages::U8 { num: 0x57 }),
+                vec![
+                    0xFF, // Start byte
+                    0x03, 0x00, // Length (2 bytes for message type + 1 byte data)
+                    0x01, 0x00, // Message type (1)
+                    0x57, // The u8 value
+                ],
+            ),
+            (
+                Message::Bytes(messages::Bytes {
+                    data: vec![1, 2, 3, 4, 5],
+                }),
+                vec![
+                    0xFF, // Start byte
+                    0x07, 0x00, // Length (2 bytes for message type + 5 bytes data)
+                    0x00, 0x00, // Message type (0)
+                    1, 2, 3, 4, 5, // The bytes
+                ],
+            ),
         ];
 
-        sender.send(Message::NoOp(messages::NoOp {})).unwrap();
+        for (message, expected_bytes) in test_cases {
+            let (stream1, mut stream2) = UnixStream::pair().unwrap();
+            let mut sender = SerialManager::new(stream1);
+            sender.send(message).unwrap();
 
-        let mut received_bytes = vec![0u8; expected_bytes.len()];
-        stream2.read_exact(&mut received_bytes).unwrap();
-        assert_eq!(received_bytes, expected_bytes);
+            let mut received_bytes = vec![0u8; expected_bytes.len()];
+            stream2.read_exact(&mut received_bytes).unwrap();
+            assert_eq!(received_bytes, expected_bytes);
 
-        // Try to read one more byte to verify nothing else was sent
-        stream2
-            .set_read_timeout(Some(Duration::from_millis(10)))
-            .unwrap();
-        let mut extra_byte = [0u8; 1];
-        assert!(stream2.read_exact(&mut extra_byte).is_err());
+            // Try to read one more byte to verify nothing else was sent
+            stream2
+                .set_read_timeout(Some(Duration::from_millis(10)))
+                .unwrap();
+            let mut extra_byte = [0u8; 1];
+            assert!(stream2.read_exact(&mut extra_byte).is_err());
+        }
     }
 
     #[test]
