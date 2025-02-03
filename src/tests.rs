@@ -249,3 +249,27 @@ fn test_receive_with_interleaved_garbage() {
     let received_message2 = receiver.receive().unwrap();
     assert_eq!(received_message2, expected_message2);
 }
+
+#[test]
+fn test_receive_interrupted_message() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    // Take a message from our test cases that will be interrupted
+    let (_, message_bytes1) = get_test_cases()[1].clone(); // U8 message
+
+    // Take another message that will be received successfully
+    let (expected_message2, message_bytes2) = get_test_cases()[0].clone(); // NoOp message
+
+    // Send first half of first message
+    let half_length = message_bytes1.len() / 2;
+    stream1.write_all(&message_bytes1[..half_length]).unwrap();
+
+    // Send the complete second message
+    stream1.write_all(&message_bytes2).unwrap();
+    stream1.flush().unwrap();
+
+    // Should receive the second message correctly, first message should be discarded
+    let received_message = receiver.receive().unwrap();
+    assert_eq!(received_message, expected_message2);
+}
