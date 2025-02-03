@@ -1,5 +1,4 @@
 use std::io::{self, Read, Write};
-use std::os::unix::net::UnixStream;
 
 pub struct SerialManager<T>
 where
@@ -31,15 +30,28 @@ where
 }
 
 fn main() {
-    let (stream1, stream2) = UnixStream::pair().unwrap();
+    // Main function left empty for now
+}
 
-    let mut sender = SerialManager::new(stream1);
-    let mut receiver = SerialManager::new(stream2);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::net::UnixStream;
 
-    let data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F];
-    sender.send(&data).unwrap();
-    println!("Sent data: {:?}", data);
+    #[test]
+    fn test_serial_communication() {
+        let (stream1, stream2) = UnixStream::pair().unwrap();
 
-    let received = receiver.receive().unwrap();
-    println!("Received data: {:?}", received);
+        let mut sender = SerialManager::new(stream1);
+        let mut receiver = SerialManager::new(stream2);
+
+        let data = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F];
+        sender.send(&data).unwrap();
+        println!("Sent data: {:?}", data);
+
+        let received = receiver.receive().unwrap();
+        println!("Received data: {:?}", received);
+
+        assert_eq!(data, received);
+    }
 }
