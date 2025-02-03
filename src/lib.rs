@@ -148,9 +148,8 @@ mod tests {
     use super::*;
     use std::{os::unix::net::UnixStream, time::Duration};
 
-    #[test]
-    fn test_send_raw_bytes() {
-        let test_cases = vec![
+    fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
+        vec![
             (
                 Message::NoOp(messages::NoOp {}),
                 vec![
@@ -179,9 +178,12 @@ mod tests {
                     1, 2, 3, 4, 5, // The bytes
                 ],
             ),
-        ];
+        ]
+    }
 
-        for (message, expected_bytes) in test_cases {
+    #[test]
+    fn test_send_raw_bytes() {
+        for (message, expected_bytes) in get_test_cases() {
             let (stream1, mut stream2) = UnixStream::pair().unwrap();
             let mut sender = SerialManager::new(stream1);
             sender.send(message).unwrap();
@@ -196,6 +198,20 @@ mod tests {
                 .unwrap();
             let mut extra_byte = [0u8; 1];
             assert!(stream2.read_exact(&mut extra_byte).is_err());
+        }
+    }
+
+    #[test]
+    fn test_receive_raw_bytes() {
+        for (expected_message, bytes_to_send) in get_test_cases() {
+            let (mut stream1, stream2) = UnixStream::pair().unwrap();
+            let mut receiver = SerialManager::new(stream2);
+
+            stream1.write_all(&bytes_to_send).unwrap();
+            stream1.flush().unwrap();
+
+            let received_message = receiver.receive().unwrap();
+            assert_eq!(received_message, expected_message);
         }
     }
 
