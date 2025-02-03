@@ -5,22 +5,45 @@ mod messages {
     pub struct Test {
         pub data: Vec<u8>,
     }
+
+    #[derive(Debug, PartialEq, Clone)]
+    pub struct Test2 {
+        pub data: Vec<u8>,
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Message {
     Test(messages::Test),
+    Test2(messages::Test2),
 }
 
 impl Message {
     fn to_bytes(self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
         match self {
-            Message::Test(msg) => msg.data,
+            Message::Test(msg) => {
+                bytes.push(0);
+                bytes.extend(msg.data);
+            }
+            Message::Test2(msg) => {
+                bytes.push(1);
+                bytes.extend(msg.data);
+            }
         }
+
+        bytes
     }
 
     fn from_bytes(bytes: Vec<u8>) -> Self {
-        Message::Test(messages::Test { data: bytes })
+        let message_type = bytes[0];
+        let data = bytes[1..].to_vec();
+        match message_type {
+            0 => Message::Test(messages::Test { data }),
+            1 => Message::Test2(messages::Test2 { data }),
+            _ => panic!("Invalid message type"),
+        }
     }
 }
 
