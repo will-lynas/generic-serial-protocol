@@ -19,18 +19,28 @@ pub enum Message {
 }
 
 impl Message {
+    fn message_type(&self) -> u8 {
+        match self {
+            Message::Test(_) => 0,
+            Message::Test2(_) => 1,
+        }
+    }
+
+    fn from_type(message_type: u8, data: Vec<u8>) -> Self {
+        match message_type {
+            0 => Message::Test(messages::Test { data }),
+            1 => Message::Test2(messages::Test2 { data }),
+            _ => panic!("Invalid message type: {}", message_type),
+        }
+    }
+
     fn to_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
+        bytes.push(self.message_type());
 
         match self {
-            Message::Test(msg) => {
-                bytes.push(0);
-                bytes.extend(msg.data);
-            }
-            Message::Test2(msg) => {
-                bytes.push(1);
-                bytes.extend(msg.data);
-            }
+            Message::Test(msg) => bytes.extend(msg.data),
+            Message::Test2(msg) => bytes.extend(msg.data),
         }
 
         bytes
@@ -39,11 +49,7 @@ impl Message {
     fn from_bytes(bytes: Vec<u8>) -> Self {
         let message_type = bytes[0];
         let data = bytes[1..].to_vec();
-        match message_type {
-            0 => Message::Test(messages::Test { data }),
-            1 => Message::Test2(messages::Test2 { data }),
-            _ => panic!("Invalid message type"),
-        }
+        Self::from_type(message_type, data)
     }
 }
 
