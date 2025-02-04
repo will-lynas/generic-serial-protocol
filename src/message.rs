@@ -9,6 +9,7 @@ pub enum Message {
     Multi(message_types::Multi),
     NoOp(message_types::NoOp),
     U16(message_types::U16),
+    Status(message_types::Status),
 }
 
 impl Message {
@@ -21,6 +22,7 @@ impl Message {
             Message::Multi(_) => 3,
             Message::NoOp(_) => 4,
             Message::U16(_) => 5,
+            Message::Status(_) => 6,
         }
     }
 
@@ -38,6 +40,11 @@ impl Message {
             }
             Message::NoOp(_) => {}
             Message::U16(msg) => bytes.extend(msg.num.to_le_bytes()),
+            Message::Status(status) => bytes.push(match status {
+                message_types::Status::Ok => 0,
+                message_types::Status::Error => 1,
+                message_types::Status::Pending => 2,
+            }),
         }
 
         bytes
@@ -58,6 +65,13 @@ impl Message {
             4 => Message::NoOp(message_types::NoOp {}),
             5 => Message::U16(message_types::U16 {
                 num: u16::from_le_bytes([data[0], data[1]]),
+            }),
+            #[allow(clippy::match_on_vec_items)]
+            6 => Message::Status(match data[0] {
+                0 => message_types::Status::Ok,
+                1 => message_types::Status::Error,
+                2 => message_types::Status::Pending,
+                invalid => return Err(DecodeError::InvalidEnumValue(invalid)),
             }),
             _ => return Err(DecodeError::InvalidMessageType(message_type)),
         })

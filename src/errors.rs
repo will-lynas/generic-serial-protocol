@@ -24,6 +24,8 @@ pub enum DecodeError {
     InvalidMessageType(u16),
     #[error("Invalid UTF-8: {0}")]
     InvalidUtf8(#[from] FromUtf8Error),
+    #[error("Invalid enum value: {0}")]
+    InvalidEnumValue(u8),
 }
 
 impl From<io::Error> for ReceiveError {

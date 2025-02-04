@@ -26,3 +26,10 @@ pub struct Multi {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct NoOp {}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Status {
+    Ok,
+    Error,
+    Pending,
+}

@@ -126,6 +126,15 @@ fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
                 bytes
             },
         ),
+        (
+            Message::Status(message_types::Status::Error),
+            vec![
+                START_BYTE, // Start byte
+                0x03, 0x00, // Length (2 bytes for message type + 1 byte for enum)
+                0x06, 0x00, // Message type (6)
+                0x01, // Status::Error value
+            ],
+        ),
     ]
 }
 
@@ -354,7 +363,7 @@ fn test_receive_invalid_message_type() {
     let invalid_message = vec![
         START_BYTE, // Start byte
         0x02, 0x00, // Length (2 bytes for message type)
-        0x06, 0x00, // Invalid message type (6)
+        0xFF, 0x00, // Invalid message type (0xFF)
     ];
 
     stream1.write_all(&invalid_message).unwrap();
@@ -362,7 +371,7 @@ fn test_receive_invalid_message_type() {
 
     assert!(matches!(
         receiver.receive(),
-        Err(ReceiveError::Decode(DecodeError::InvalidMessageType(6)))
+        Err(ReceiveError::Decode(DecodeError::InvalidMessageType(0xFF)))
     ));
 }
 
@@ -382,5 +391,27 @@ fn test_invalid_utf8() {
     assert!(matches!(
         receiver.receive(),
         Err(ReceiveError::Decode(DecodeError::InvalidUtf8(_)))
+    ));
+}
+
+#[test]
+fn test_invalid_enum_value() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    // Create a message with an invalid Status enum value (3)
+    let invalid_message = vec![
+        START_BYTE, // Start byte
+        0x03, 0x00, // Length (2 bytes for message type + 1 byte for enum)
+        0x06, 0x00, // Message type (6 - Status)
+        0x03, // Invalid Status value
+    ];
+
+    stream1.write_all(&invalid_message).unwrap();
+    stream1.flush().unwrap();
+
+    assert!(matches!(
+        receiver.receive(),
+        Err(ReceiveError::Decode(DecodeError::InvalidEnumValue(3)))
     ));
 }
