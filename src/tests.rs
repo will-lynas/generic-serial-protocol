@@ -1,5 +1,5 @@
 use super::*;
-use message::DecodeError;
+use errors::{DecodeError, ReceiveError};
 use std::{os::unix::net::UnixStream, time::Duration};
 
 fn get_test_cases() -> Vec<(Message, Vec<u8>)> {

@@ -1,49 +1,15 @@
 use std::io::{self, Read, Write};
 
+mod errors;
 mod message;
 mod message_types;
 
+pub use errors::{DecodeError, ReadError, ReceiveError};
 pub use message::Message;
 
 const START_BYTE: u8 = 0x58;
 const ESCAPE_BYTE: u8 = 0x42;
 const XOR_BYTE: u8 = 0x69;
-
-#[derive(Debug)]
-pub enum ReadError {
-    NewMessage,
-    Io(io::Error),
-}
-
-#[derive(Debug)]
-pub enum ReceiveError {
-    Read(ReadError),
-    Decode(message::DecodeError),
-}
-
-impl From<io::Error> for ReadError {
-    fn from(error: io::Error) -> Self {
-        ReadError::Io(error)
-    }
-}
-
-impl From<io::Error> for ReceiveError {
-    fn from(error: io::Error) -> Self {
-        ReceiveError::Read(ReadError::Io(error))
-    }
-}
-
-impl From<ReadError> for ReceiveError {
-    fn from(error: ReadError) -> Self {
-        ReceiveError::Read(error)
-    }
-}
-
-impl From<message::DecodeError> for ReceiveError {
-    fn from(error: message::DecodeError) -> Self {
-        ReceiveError::Decode(error)
-    }
-}
 
 pub struct SerialManager<T>
 where

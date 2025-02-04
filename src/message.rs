@@ -1,3 +1,4 @@
+use crate::errors::DecodeError;
 use crate::message_types;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -8,18 +9,6 @@ pub enum Message {
     Multi(message_types::Multi),
     NoOp(message_types::NoOp),
     U16(message_types::U16),
-}
-
-#[derive(Debug)]
-pub enum DecodeError {
-    InvalidMessageType(u16),
-    InvalidUtf8(std::string::FromUtf8Error),
-}
-
-impl From<std::string::FromUtf8Error> for DecodeError {
-    fn from(err: std::string::FromUtf8Error) -> Self {
-        DecodeError::InvalidUtf8(err)
-    }
 }
 
 impl Message {
