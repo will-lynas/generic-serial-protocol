@@ -10,14 +10,38 @@ const ESCAPE_BYTE: u8 = 0x42;
 const XOR_BYTE: u8 = 0x69;
 
 #[derive(Debug)]
-enum ReadError {
+pub enum ReadError {
     NewMessage,
     Io(io::Error),
+}
+
+#[derive(Debug)]
+pub enum ReceiveError {
+    Read(ReadError),
+    Decode(message::DecodeError),
 }
 
 impl From<io::Error> for ReadError {
     fn from(error: io::Error) -> Self {
         ReadError::Io(error)
+    }
+}
+
+impl From<io::Error> for ReceiveError {
+    fn from(error: io::Error) -> Self {
+        ReceiveError::Read(ReadError::Io(error))
+    }
+}
+
+impl From<ReadError> for ReceiveError {
+    fn from(error: ReadError) -> Self {
+        ReceiveError::Read(error)
+    }
+}
+
+impl From<message::DecodeError> for ReceiveError {
+    fn from(error: message::DecodeError) -> Self {
+        ReceiveError::Decode(error)
     }
 }
 
@@ -110,15 +134,15 @@ where
         }
     }
 
-    pub fn receive(&mut self) -> io::Result<Message> {
+    pub fn receive(&mut self) -> Result<Message, ReceiveError> {
         self.wait_for_start_byte()?;
 
         // Try reading messages until we succeed
         loop {
             match self.read_message() {
                 Ok(message) => return Ok(message),
-                Err(ReadError::NewMessage) => (), // Got another START_BYTE, try reading new message
-                Err(ReadError::Io(e)) => return Err(e),
+                Err(ReceiveError::Read(ReadError::NewMessage)) => (), // Got another START_BYTE, try reading new message
+                Err(e) => return Err(e),
             }
         }
     }
@@ -128,11 +152,11 @@ where
         Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
     }
 
-    fn read_message(&mut self) -> Result<Message, ReadError> {
+    fn read_message(&mut self) -> Result<Message, ReceiveError> {
         let length = self.read_u16()? as usize;
         let message_type = self.read_u16()?;
         let data = self.read_escaped_bytes(length - 2)?;
-        Ok(Message::from_bytes(message_type, data))
+        Ok(Message::from_bytes(message_type, data)?)
     }
 }
 

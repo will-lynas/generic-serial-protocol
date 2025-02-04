@@ -1,4 +1,5 @@
 use super::*;
+use message::DecodeError;
 use std::{os::unix::net::UnixStream, time::Duration};
 
 fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
@@ -343,7 +344,6 @@ fn test_receive_interrupted_message_type() {
 }
 
 #[test]
-#[should_panic(expected = "Invalid message type")]
 fn test_receive_invalid_message_type() {
     let (mut stream1, stream2) = UnixStream::pair().unwrap();
     let mut receiver = SerialManager::new(stream2);
@@ -351,11 +351,14 @@ fn test_receive_invalid_message_type() {
     let invalid_message = vec![
         START_BYTE, // Start byte
         0x02, 0x00, // Length (2 bytes for message type)
-        0xFF, 0xFF, // Invalid message type
+        0x06, 0x00, // Invalid message type (6)
     ];
 
     stream1.write_all(&invalid_message).unwrap();
     stream1.flush().unwrap();
 
-    receiver.receive().unwrap();
+    assert!(matches!(
+        receiver.receive(),
+        Err(ReceiveError::Decode(DecodeError::InvalidMessageType(6)))
+    ));
 }
