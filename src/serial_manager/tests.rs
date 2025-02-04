@@ -4,6 +4,7 @@ use crate::message_types;
 use crate::Message;
 use std::{os::unix::net::UnixStream, time::Duration};
 
+#[allow(clippy::too_many_lines)]
 fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
     vec![
         (
@@ -173,8 +174,8 @@ fn test_send_receive() {
 
     for message in test_messages {
         sender.send(message.clone()).unwrap();
-        let received = receiver.receive().unwrap();
-        assert_eq!(message, received);
+        let result = receiver.receive().unwrap();
+        assert_eq!(message, result);
     }
 }
 
