@@ -12,6 +12,7 @@ pub enum Message {
 }
 
 impl Message {
+    #[must_use]
     pub fn message_type(&self) -> u16 {
         match self {
             Message::Bytes(_) => 0,
@@ -23,6 +24,7 @@ impl Message {
         }
     }
 
+    #[must_use]
     pub fn to_bytes(self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -41,6 +43,12 @@ impl Message {
         bytes
     }
 
+    /// Creates a Message from its raw byte representation
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The message type is invalid
+    /// - The data contains invalid UTF-8 for string messages
     pub fn from_bytes(message_type: u16, data: Vec<u8>) -> Result<Self, DecodeError> {
         Ok(match message_type {
             0 => Message::Bytes(message_types::Bytes { data }),

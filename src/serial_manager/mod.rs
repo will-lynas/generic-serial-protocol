@@ -21,9 +21,14 @@ where
         Self { connection }
     }
 
+    /// Sends a message over the serial connection
+    ///
+    /// # Errors
+    /// Returns an error if writing to the underlying connection fails
     pub fn send(&mut self, message: Message) -> io::Result<()> {
         let message_type_bytes = message.message_type().to_le_bytes();
         let data = message.to_bytes();
+        #[allow(clippy::cast_possible_truncation)]
         let length = (message_type_bytes.len() + data.len()) as u16;
         let length_bytes = length.to_le_bytes();
 
@@ -35,6 +40,10 @@ where
         Ok(())
     }
 
+    /// Receives a message from the serial connection
+    ///
+    /// # Errors
+    /// Returns an error if reading from the underlying connection fails or if the message is malformed
     pub fn receive(&mut self) -> Result<Message, ReceiveError> {
         self.wait_for_start_byte()?;
 
