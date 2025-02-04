@@ -341,3 +341,21 @@ fn test_receive_interrupted_message_type() {
     let received_message = receiver.receive().unwrap();
     assert_eq!(received_message, expected_message);
 }
+
+#[test]
+#[should_panic(expected = "Invalid message type")]
+fn test_receive_invalid_message_type() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    let invalid_message = vec![
+        START_BYTE, // Start byte
+        0x02, 0x00, // Length (2 bytes for message type)
+        0xFF, 0xFF, // Invalid message type
+    ];
+
+    stream1.write_all(&invalid_message).unwrap();
+    stream1.flush().unwrap();
+
+    receiver.receive().unwrap();
+}
