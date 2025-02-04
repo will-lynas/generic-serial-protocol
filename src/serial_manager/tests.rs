@@ -1,5 +1,7 @@
 use super::*;
-use errors::{DecodeError, ReceiveError};
+use crate::errors::{DecodeError, ReceiveError};
+use crate::message_types;
+use crate::Message;
 use std::{os::unix::net::UnixStream, time::Duration};
 
 fn get_test_cases() -> Vec<(Message, Vec<u8>)> {
