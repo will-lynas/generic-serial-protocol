@@ -16,6 +16,12 @@ pub enum DecodeError {
     InvalidUtf8(std::string::FromUtf8Error),
 }
 
+impl From<std::string::FromUtf8Error> for DecodeError {
+    fn from(err: std::string::FromUtf8Error) -> Self {
+        DecodeError::InvalidUtf8(err)
+    }
+}
+
 impl Message {
     pub fn message_type(&self) -> u16 {
         match self {
@@ -51,11 +57,11 @@ impl Message {
             0 => Message::Bytes(message_types::Bytes { data }),
             1 => Message::U8(message_types::U8 { num: data[0] }),
             2 => Message::MyString(message_types::MyString {
-                string: String::from_utf8(data).map_err(DecodeError::InvalidUtf8)?,
+                string: String::from_utf8(data)?,
             }),
             3 => Message::Multi(message_types::Multi {
                 num: data[0],
-                string: String::from_utf8(data[1..].to_vec()).map_err(DecodeError::InvalidUtf8)?,
+                string: String::from_utf8(data[1..].to_vec())?,
             }),
             4 => Message::NoOp(message_types::NoOp {}),
             5 => Message::U16(message_types::U16 {
