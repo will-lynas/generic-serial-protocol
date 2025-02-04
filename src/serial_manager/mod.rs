@@ -63,6 +63,12 @@ where
     }
 
     /// Receives a message from the serial connection
+    ///
+    /// This function will block until a message is received.
+    ///
+    /// If the start byte is encountered mid-packet, the function will resync to the next packet.
+    ///
+    /// An error is returned if there is an IO error or if the message is malformed.
     pub fn receive(&mut self) -> Result<Message, ReceiveError> {
         self.wait_for_start_byte()?;
 
