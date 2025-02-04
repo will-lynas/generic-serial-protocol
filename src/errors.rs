@@ -1,4 +1,5 @@
 use std::io;
+use std::string::FromUtf8Error;
 
 #[derive(Debug)]
 pub enum ReadError {
@@ -15,7 +16,7 @@ pub enum ReceiveError {
 #[derive(Debug)]
 pub enum DecodeError {
     InvalidMessageType(u16),
-    InvalidUtf8(std::string::FromUtf8Error),
+    InvalidUtf8(FromUtf8Error),
 }
 
 impl From<io::Error> for ReadError {
@@ -42,8 +43,8 @@ impl From<DecodeError> for ReceiveError {
     }
 }
 
-impl From<std::string::FromUtf8Error> for DecodeError {
-    fn from(err: std::string::FromUtf8Error) -> Self {
+impl From<FromUtf8Error> for DecodeError {
+    fn from(err: FromUtf8Error) -> Self {
         DecodeError::InvalidUtf8(err)
     }
 }
