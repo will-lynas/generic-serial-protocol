@@ -46,21 +46,21 @@ impl Message {
     }
 
     pub fn from_bytes(message_type: u16, data: Vec<u8>) -> Result<Self, DecodeError> {
-        match message_type {
-            0 => Ok(Message::Bytes(message_types::Bytes { data })),
-            1 => Ok(Message::U8(message_types::U8 { num: data[0] })),
-            2 => Ok(Message::MyString(message_types::MyString {
+        Ok(match message_type {
+            0 => Message::Bytes(message_types::Bytes { data }),
+            1 => Message::U8(message_types::U8 { num: data[0] }),
+            2 => Message::MyString(message_types::MyString {
                 string: String::from_utf8(data).unwrap(),
-            })),
-            3 => Ok(Message::Multi(message_types::Multi {
+            }),
+            3 => Message::Multi(message_types::Multi {
                 num: data[0],
                 string: String::from_utf8(data[1..].to_vec()).unwrap(),
-            })),
-            4 => Ok(Message::NoOp(message_types::NoOp {})),
-            5 => Ok(Message::U16(message_types::U16 {
+            }),
+            4 => Message::NoOp(message_types::NoOp {}),
+            5 => Message::U16(message_types::U16 {
                 num: u16::from_le_bytes([data[0], data[1]]),
-            })),
-            _ => Err(DecodeError::InvalidMessageType(message_type)),
-        }
+            }),
+            _ => return Err(DecodeError::InvalidMessageType(message_type)),
+        })
     }
 }
