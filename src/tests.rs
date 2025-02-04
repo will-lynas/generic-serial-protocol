@@ -362,3 +362,22 @@ fn test_receive_invalid_message_type() {
         Err(ReceiveError::Decode(DecodeError::InvalidMessageType(6)))
     ));
 }
+
+#[test]
+fn test_invalid_utf8() {
+    let (mut stream1, stream2) = UnixStream::pair().unwrap();
+    let mut receiver = SerialManager::new(stream2);
+
+    let invalid_string_message = vec![
+        START_BYTE, 0x04, 0x00, // Length (2 bytes type + 2 bytes data)
+        0x02, 0x00, // Message type (2 = MyString)
+        0xFF, 0xFF, // Invalid UTF-8 bytes
+    ];
+    stream1.write_all(&invalid_string_message).unwrap();
+    stream1.flush().unwrap();
+
+    assert!(matches!(
+        receiver.receive(),
+        Err(ReceiveError::Decode(DecodeError::InvalidUtf8(_)))
+    ));
+}
