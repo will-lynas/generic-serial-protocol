@@ -44,11 +44,6 @@ impl Message {
     }
 
     /// Creates a Message from its raw byte representation
-    ///
-    /// # Errors
-    /// Returns an error if:
-    /// - The message type is invalid
-    /// - The data contains invalid UTF-8 for string messages
     pub fn from_bytes(message_type: u16, data: Vec<u8>) -> Result<Self, DecodeError> {
         Ok(match message_type {
             0 => Message::Bytes(message_types::Bytes { data }),

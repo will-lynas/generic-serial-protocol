@@ -22,9 +22,6 @@ where
     }
 
     /// Sends a message over the serial connection
-    ///
-    /// # Errors
-    /// Returns an error if writing to the underlying connection fails
     pub fn send(&mut self, message: Message) -> io::Result<()> {
         let message_type_bytes = message.message_type().to_le_bytes();
         let data = message.to_bytes();
@@ -41,9 +38,6 @@ where
     }
 
     /// Receives a message from the serial connection
-    ///
-    /// # Errors
-    /// Returns an error if reading from the underlying connection fails or if the message is malformed
     pub fn receive(&mut self) -> Result<Message, ReceiveError> {
         self.wait_for_start_byte()?;
 

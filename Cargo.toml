@@ -5,7 +5,3 @@ edition = "2021"
 
 [dependencies]
 thiserror = "1.0"
-
-[lints.clippy]
-all = "warn"
-pedantic = "warn"
