@@ -26,6 +26,32 @@ where
         Self { connection }
     }
 
+    pub fn send(&mut self, message: Message) -> io::Result<()> {
+        let message_type_bytes = message.message_type().to_le_bytes();
+        let data = message.to_bytes();
+        let length = (message_type_bytes.len() + data.len()) as u16;
+        let length_bytes = length.to_le_bytes();
+
+        self.connection.write_all(&[START_BYTE])?;
+        self.write_escaped_bytes(&length_bytes)?;
+        self.write_escaped_bytes(&message_type_bytes)?;
+        self.write_escaped_bytes(&data)?;
+        self.connection.flush()?;
+        Ok(())
+    }
+
+    pub fn receive(&mut self) -> Result<Message, ReceiveError> {
+        self.wait_for_start_byte()?;
+
+        loop {
+            match self.read_message() {
+                Ok(message) => return Ok(message),
+                Err(ReceiveError::Read(ReadError::NewMessage)) => (),
+                Err(e) => return Err(e),
+            }
+        }
+    }
+
     fn needs_escaping(byte: u8) -> bool {
         byte == START_BYTE || byte == ESCAPE_BYTE
     }
@@ -36,6 +62,13 @@ where
             self.connection.write_all(&[byte ^ XOR_BYTE])?;
         } else {
             self.connection.write_all(&[byte])?;
+        }
+        Ok(())
+    }
+
+    fn write_escaped_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
+        for &byte in bytes {
+            self.write_escaped_byte(byte)?;
         }
         Ok(())
     }
@@ -61,13 +94,6 @@ where
         }
     }
 
-    fn write_escaped_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
-        for &byte in bytes {
-            self.write_escaped_byte(byte)?;
-        }
-        Ok(())
-    }
-
     fn read_escaped_bytes(&mut self, length: usize) -> Result<Vec<u8>, ReadError> {
         let mut result = Vec::with_capacity(length);
         for _ in 0..length {
@@ -76,18 +102,9 @@ where
         Ok(result)
     }
 
-    pub fn send(&mut self, message: Message) -> io::Result<()> {
-        let message_type_bytes = message.message_type().to_le_bytes();
-        let data = message.to_bytes();
-        let length = (message_type_bytes.len() + data.len()) as u16;
-        let length_bytes = length.to_le_bytes();
-
-        self.connection.write_all(&[START_BYTE])?;
-        self.write_escaped_bytes(&length_bytes)?;
-        self.write_escaped_bytes(&message_type_bytes)?;
-        self.write_escaped_bytes(&data)?;
-        self.connection.flush()?;
-        Ok(())
+    fn read_u16(&mut self) -> Result<u16, ReadError> {
+        let bytes = self.read_escaped_bytes(2)?;
+        Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
     }
 
     fn wait_for_start_byte(&mut self) -> io::Result<()> {
@@ -98,24 +115,6 @@ where
                 Err(ReadError::Io(e)) => return Err(e),
             }
         }
-    }
-
-    pub fn receive(&mut self) -> Result<Message, ReceiveError> {
-        self.wait_for_start_byte()?;
-
-        // Try reading messages until we succeed
-        loop {
-            match self.read_message() {
-                Ok(message) => return Ok(message),
-                Err(ReceiveError::Read(ReadError::NewMessage)) => (), // Got another START_BYTE, try reading new message
-                Err(e) => return Err(e),
-            }
-        }
-    }
-
-    fn read_u16(&mut self) -> Result<u16, ReadError> {
-        let bytes = self.read_escaped_bytes(2)?;
-        Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
     }
 
     fn read_message(&mut self) -> Result<Message, ReceiveError> {
