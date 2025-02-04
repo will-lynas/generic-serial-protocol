@@ -123,16 +123,15 @@ where
         }
     }
 
+    fn read_u16(&mut self) -> Result<u16, ReadError> {
+        let bytes = self.read_escaped_bytes(2)?;
+        Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
+    }
+
     fn read_message(&mut self) -> Result<Message, ReadError> {
-        // Read and unescape length
-        let length_bytes = self.read_escaped_bytes(2)?;
-        let length = u16::from_le_bytes([length_bytes[0], length_bytes[1]]) as usize;
-
-        // Read and unescape the message type and data
-        let buffer = self.read_escaped_bytes(length)?;
-
-        let message_type = u16::from_le_bytes([buffer[0], buffer[1]]);
-        let data = buffer[2..].to_vec();
+        let length = self.read_u16()? as usize;
+        let message_type = self.read_u16()?;
+        let data = self.read_escaped_bytes(length - 2)?;
         Ok(Message::from_bytes(message_type, data))
     }
 }
