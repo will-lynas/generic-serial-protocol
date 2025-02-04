@@ -100,15 +100,18 @@ where
         Ok(())
     }
 
-    pub fn receive(&mut self) -> io::Result<Message> {
-        // Wait for the initial start byte
+    fn wait_for_start_byte(&mut self) -> io::Result<()> {
         loop {
-            let mut byte = [0u8; 1];
-            self.connection.read_exact(&mut byte)?;
-            if byte[0] == START_BYTE {
-                break;
+            match self.read_byte() {
+                Ok(_) => (),
+                Err(ReadError::NewMessage) => return Ok(()),
+                Err(ReadError::Io(e)) => return Err(e),
             }
         }
+    }
+
+    pub fn receive(&mut self) -> io::Result<Message> {
+        self.wait_for_start_byte()?;
 
         // Try reading messages until we succeed
         loop {
