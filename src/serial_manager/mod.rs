@@ -1,4 +1,4 @@
-use crate::errors::{ReadError, ReceiveError};
+use crate::errors::{MaybeResyncError, ReceiveError};
 use crate::message::Message;
 use std::io::{self, Read, Write};
 
@@ -75,8 +75,8 @@ where
         loop {
             match self.read_message() {
                 Ok(message) => return Ok(message),
-                Err(ReceiveError::Read(ReadError::NewMessage)) => (),
-                Err(e) => return Err(e),
+                Err(MaybeResyncError::Resync) => (),
+                Err(MaybeResyncError::Error(e)) => return Err(e),
             }
         }
     }
@@ -102,17 +102,17 @@ where
         Ok(())
     }
 
-    fn read_byte(&mut self) -> Result<u8, ReadError> {
+    fn read_byte(&mut self) -> Result<u8, MaybeResyncError<io::Error>> {
         let mut byte = [0u8; 1];
         self.connection.read_exact(&mut byte)?;
 
         if byte[0] == START_BYTE {
-            return Err(ReadError::NewMessage);
+            return Err(MaybeResyncError::Resync);
         }
         Ok(byte[0])
     }
 
-    fn read_escaped_byte(&mut self) -> Result<u8, ReadError> {
+    fn read_escaped_byte(&mut self) -> Result<u8, MaybeResyncError<io::Error>> {
         let byte = self.read_byte()?;
 
         if byte == ESCAPE_BYTE {
@@ -123,7 +123,10 @@ where
         }
     }
 
-    fn read_escaped_bytes(&mut self, length: usize) -> Result<Vec<u8>, ReadError> {
+    fn read_escaped_bytes(
+        &mut self,
+        length: usize,
+    ) -> Result<Vec<u8>, MaybeResyncError<io::Error>> {
         let mut result = Vec::with_capacity(length);
         for _ in 0..length {
             result.push(self.read_escaped_byte()?);
@@ -131,7 +134,7 @@ where
         Ok(result)
     }
 
-    fn read_u16(&mut self) -> Result<u16, ReadError> {
+    fn read_u16(&mut self) -> Result<u16, MaybeResyncError<io::Error>> {
         let bytes = self.read_escaped_bytes(2)?;
         Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
     }
@@ -140,13 +143,13 @@ where
         loop {
             match self.read_byte() {
                 Ok(_) => (),
-                Err(ReadError::NewMessage) => return Ok(()),
-                Err(ReadError::Io(e)) => return Err(e),
+                Err(MaybeResyncError::Resync) => return Ok(()),
+                Err(MaybeResyncError::Error(e)) => return Err(e),
             }
         }
     }
 
-    fn read_message(&mut self) -> Result<Message, ReceiveError> {
+    fn read_message(&mut self) -> Result<Message, MaybeResyncError<ReceiveError>> {
         let length = self.read_u16()? as usize;
         let message_type = self.read_u16()?;
         let data = self.read_escaped_bytes(length - 2)?;

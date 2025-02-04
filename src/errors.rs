@@ -3,17 +3,32 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ReadError {
-    #[error("New message received")]
-    NewMessage,
-    #[error("IO error: {0}")]
-    Io(#[from] io::Error),
+pub enum MaybeResyncError<T> {
+    #[error("Resync")]
+    Resync,
+    #[error("Error: {0}")]
+    Error(#[from] T),
+}
+
+impl From<MaybeResyncError<io::Error>> for MaybeResyncError<ReceiveError> {
+    fn from(error: MaybeResyncError<io::Error>) -> Self {
+        match error {
+            MaybeResyncError::Resync => MaybeResyncError::Resync,
+            MaybeResyncError::Error(e) => MaybeResyncError::Error(e.into()),
+        }
+    }
+}
+
+impl From<DecodeError> for MaybeResyncError<ReceiveError> {
+    fn from(error: DecodeError) -> Self {
+        MaybeResyncError::Error(error.into())
+    }
 }
 
 #[derive(Debug, Error)]
 pub enum ReceiveError {
-    #[error("Read error: {0}")]
-    Read(#[from] ReadError),
+    #[error("IO error: {0}")]
+    Io(#[from] io::Error),
     #[error("Decode error: {0}")]
     Decode(#[from] DecodeError),
 }
@@ -26,10 +41,4 @@ pub enum DecodeError {
     InvalidUtf8(#[from] FromUtf8Error),
     #[error("Invalid enum value: {0}")]
     InvalidEnumValue(u8),
-}
-
-impl From<io::Error> for ReceiveError {
-    fn from(error: io::Error) -> Self {
-        ReceiveError::Read(ReadError::Io(error))
-    }
 }
