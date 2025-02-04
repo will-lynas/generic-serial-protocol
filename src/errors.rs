@@ -1,50 +1,33 @@
 use std::io;
 use std::string::FromUtf8Error;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ReadError {
+    #[error("New message received")]
     NewMessage,
-    Io(io::Error),
+    #[error("IO error: {0}")]
+    Io(#[from] io::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ReceiveError {
-    Read(ReadError),
-    Decode(DecodeError),
+    #[error("Read error: {0}")]
+    Read(#[from] ReadError),
+    #[error("Decode error: {0}")]
+    Decode(#[from] DecodeError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DecodeError {
+    #[error("Invalid message type: {0}")]
     InvalidMessageType(u16),
-    InvalidUtf8(FromUtf8Error),
-}
-
-impl From<io::Error> for ReadError {
-    fn from(error: io::Error) -> Self {
-        ReadError::Io(error)
-    }
+    #[error("Invalid UTF-8: {0}")]
+    InvalidUtf8(#[from] FromUtf8Error),
 }
 
 impl From<io::Error> for ReceiveError {
     fn from(error: io::Error) -> Self {
         ReceiveError::Read(ReadError::Io(error))
-    }
-}
-
-impl From<ReadError> for ReceiveError {
-    fn from(error: ReadError) -> Self {
-        ReceiveError::Read(error)
-    }
-}
-
-impl From<DecodeError> for ReceiveError {
-    fn from(error: DecodeError) -> Self {
-        ReceiveError::Decode(error)
-    }
-}
-
-impl From<FromUtf8Error> for DecodeError {
-    fn from(err: FromUtf8Error) -> Self {
-        DecodeError::InvalidUtf8(err)
     }
 }
